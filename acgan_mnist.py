@@ -1,14 +1,11 @@
-import tensorflow as tf
-import captcha
-import  keras.backend as K
 from __future__ import print_function, division
 
 from keras.datasets import mnist
-from keras.layers import Input, Dense, Reshape, Flatten, Dropout, multiply, MaxPool2D
+from keras.layers import Input, Dense, Reshape, Flatten, Dropout, multiply
 from keras.layers import BatchNormalization, Activation, Embedding, ZeroPadding2D
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
-from keras.models import Sequential, Model, load_model
+from keras.models import Sequential, Model
 from keras.optimizers import Adam
 
 import matplotlib.pyplot as plt
@@ -18,33 +15,21 @@ import numpy as np
 class ACGAN():
     def __init__(self):
         # Input shape
-        self.img_rows = 160
-        self.img_cols = 60
-        self.channels = 3
+        self.img_rows = 28
+        self.img_cols = 28
+        self.channels = 1
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.num_classes = 62 #待修改
-        self.latent_dim = 100 #待修改
+        self.num_classes = 10
+        self.latent_dim = 100
 
-        self.classe_model_dir = 'ctc_loss.h5'
-        self.cnn_w_dir = None
-
-        optimizer = Adam(0.0002, 0.5)#？？？
+        optimizer = Adam(0.0002, 0.5)
         losses = ['binary_crossentropy', 'sparse_categorical_crossentropy']
 
         # Build and compile the discriminator
-        self.D_regression = self.build_discriminator()
-        self.D_regression.compile(loss=losses,
-                                  optimizer=optimizer,
-                                  metrics=['accuracy'])
-
-        #Build class discriminator
-        self.D_class = self.build_classes_discriminator()
-        ## fixed model parameter
-        self.D_class.trainable = False
-        self.D_class.compile(loss='categorical_crossentropy',
-                      optimizer='SGD',
-                      metrics=['accuracy'])
-        self.D_class.load_weights(self.cnn_w_dir)
+        self.discriminator = self.build_discriminator()
+        self.discriminator.compile(loss=losses,
+            optimizer=optimizer,
+            metrics=['accuracy'])
 
         # Build the generator
         self.generator = self.build_generator()
@@ -52,38 +37,21 @@ class ACGAN():
         # The generator takes noise and the target label as input
         # and generates the corresponding digit of that label
         noise = Input(shape=(self.latent_dim,))
-        label = Input(shape=(4,))
-        img = self.generator([noise, label])#ＴＯＤＯ
+        label = Input(shape=(1,))
+        img = self.generator([noise, label])
 
         # For the combined model we will only train the generator
-        self.D_regression.trainable = False
+        self.discriminator.trainable = False
 
         # The discriminator takes generated image as input and determines validity
         # and the label of that image
-        target_label = self.D_regression(img)#TODO
-        classes_label = self.D_class(img)
+        valid, target_label = self.discriminator(img)
 
         # The combined model  (stacked generator and discriminator)
         # Trains the generator to fool the discriminator
-        self.combined = Model([noise, label], [target_label, classes_label])
+        self.combined = Model([noise, label], [valid, target_label])
         self.combined.compile(loss=losses,
             optimizer=optimizer)
-
-
-    def build_classes_discriminator(self):
-        img = Input((self.img_shape))
-        x = img
-        for i in range(4):
-            x = Conv2D(32*2**i, 3, activation='relu')(x)
-            x = Conv2D(32*2**i, 3, activation='relu')(x)
-            x = MaxPool2D((2, 2))(x)
-
-        x = Flatten()(x)
-        x = Dropout(0.25)(x)
-        x = [Dense(62, activation='softmax', name='c%d'%(i+1))(x) for i in range(4)]
-        model = Model(img, x)
-
-        return model
 
     def build_generator(self):
 
@@ -106,7 +74,7 @@ class ACGAN():
         model.summary()
 
         noise = Input(shape=(self.latent_dim,))
-        label = Input(shape=(4,), dtype='int32')
+        label = Input(shape=(1,), dtype='int32')
         label_embedding = Flatten()(Embedding(self.num_classes, 100)(label))
 
         model_input = multiply([noise, label_embedding])
