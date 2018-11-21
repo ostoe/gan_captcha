@@ -1,6 +1,7 @@
 from keras.models import *
 from keras.layers import *
 import keras
+
 input_tensor = Input((64, 64, 3))
 x = input_tensor
 for i in range(4):
@@ -56,3 +57,25 @@ y = [np.random.randn(32,10) for _ in range(10)]
 
 model1 = build_cnn_plus()
 
+
+import tensorflow as tf
+import tensorflow.keras as tk
+from tensorflow.keras.layers import *
+from tensorflow.keras.models import *
+
+def abc(x):
+    x = tf.layers.conv2d(x, 16,3,padding='same')
+    x = tf.layers.conv2d(x, 16,3,padding='same')
+    x = tf.layers.conv2d(x, 16,3,padding='same')
+    x = tf.depth_to_space(x, 2)
+
+    return x
+
+xin = Input((32,32,3))
+
+x = tf.layers.conv2d(xin, 16, 3, padding='same')
+
+x = Lambda(abc)(xin)
+
+m = Model(xin, x)
+UpSampling2D
