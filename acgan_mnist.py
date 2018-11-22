@@ -137,7 +137,7 @@ class ACGAN():
             #  Train Discriminator
             # ---------------------
 
-            # Select a random batch of images
+            # Select a random batch of captcha_images
             idx = np.random.randint(0, X_train.shape[0], batch_size)
             imgs = X_train[idx]
 
@@ -148,7 +148,7 @@ class ACGAN():
             # image representation of
             sampled_labels = np.random.randint(0, 10, (batch_size, 1))
 
-            # Generate a half batch of new images
+            # Generate a half batch of new captcha_images
             gen_imgs = self.generator.predict([noise, sampled_labels])
 
             # Image labels. 0-9 if image is valid or 10 if it is generated (fake)
@@ -173,7 +173,7 @@ class ACGAN():
 
             # If at save interval => save generated image samples
             if epoch % sample_interval == 0:
-                # self.save_model()
+                self.save_model()
                 self.sample_images(epoch)
 
     def sample_images(self, epoch):
@@ -181,7 +181,7 @@ class ACGAN():
         noise = np.random.normal(0, 1, (r * c, 100))
         sampled_labels = np.array([num for _ in range(r) for num in range(c)])
         gen_imgs = self.generator.predict([noise, sampled_labels])
-        # Rescale images 0 - 1
+        # Rescale captcha_images 0 - 1
         gen_imgs = 0.5 * gen_imgs + 0.5
 
         fig, axs = plt.subplots(r, c)
@@ -198,7 +198,7 @@ class ACGAN():
 
         def save(model, model_name):
             model_path = "saved_model/%s.json" % model_name
-            weights_path = "saved_model/%s_weights.hdf5" % model_name
+            weights_path = "saved_model/%s_weights.h5" % model_name
             options = {"file_arch": model_path,
                        "file_weight": weights_path}
             json_string = model.to_json()
